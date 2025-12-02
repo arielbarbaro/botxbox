@@ -11,7 +11,7 @@ Bot simple que abre la página de registro de Microsoft y genera correos tempora
 ## Requisitos
 
 - **Python 3.11** (requerido)
-- Google Chrome instalado
+- Firefox instalado
 - Conexión a Internet
 
 ## Instalación
@@ -30,7 +30,7 @@ python bot_registro_microsoft.py
 
 El bot:
 1. Creará un correo temporal automáticamente
-2. Abrirá Google Chrome con la página de registro de Microsoft
+2. Abrirá Firefox con la página de registro de Microsoft
 3. Mostrará el correo temporal en la consola
 4. Mantendrá el navegador abierto
 
@@ -44,6 +44,6 @@ El bot utiliza la API gratuita de **mail.tm** que:
 ## Notas
 
 - El navegador permanecerá abierto hasta que presiones Ctrl+C
-- Asegúrate de tener Chrome instalado en tu sistema
+- Asegúrate de tener Firefox instalado en tu sistema
 - Si tienes problemas, verifica tu conexión a Internet
 

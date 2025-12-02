@@ -39,7 +39,7 @@ class BotRegistroMicrosoft:
     Bot para registro de Microsoft con correos temporales
     """
     
-    def __init__(self, usar_reconocimiento: bool = True, posicion_x: int = 0, posicion_y: int = 0, usar_vpn: bool = False, vpn_servers: list = None):
+    def __init__(self, usar_reconocimiento: bool = True, posicion_x: int = 0, posicion_y: int = 0):
         """
         Inicializa el bot
         
@@ -47,366 +47,13 @@ class BotRegistroMicrosoft:
             usar_reconocimiento: Si es True, usa reconocimiento visual para encontrar el campo
             posicion_x: Coordeada X donde hacer clic (0 = no usar, solo si usar_reconocimiento=False)
             posicion_y: Coordenada Y donde hacer clic (0 = no usar, solo si usar_reconocimiento=False)
-            usar_vpn: Si es True, usa VPN y rota cada 2-3 cuentas
-            vpn_servers: Lista de servidores VPN en formato ["país", "país"] o ["ip:puerto", "ip:puerto"]
         """
         self.driver = None
         self.correo_temporal = None
         self.usar_reconocimiento = usar_reconocimiento and RECONOCIMIENTO_VISUAL_AVAILABLE
         self.posicion_x = posicion_x
         self.posicion_y = posicion_y
-        self.usar_vpn = usar_vpn
-        self.vpn_servers = vpn_servers or []
-        self.vpn_actual = None
-        # Iniciar con un país aleatorio diferente cada vez
-        if self.usar_vpn and self.vpn_servers:
-            self.indice_vpn = random.randint(0, len(self.vpn_servers) - 1)
-            print(f"🎲 País inicial aleatorio seleccionado: índice {self.indice_vpn}")
-        else:
-            self.indice_vpn = 0
         self.cuentas_creadas = 0
-        self.cuentas_por_vpn = 2  # Cambiar VPN cada 2-3 cuentas
-    
-    def _cambiar_vpn(self, forzar_cambio: bool = False) -> None:
-        """
-        Cambia la VPN usando servicios disponibles o configuración del sistema
-        
-        Args:
-            forzar_cambio: Si es True, fuerza el cambio de VPN incluso si no es momento
-        """
-        if not self.usar_vpn or not self.vpn_servers:
-            return
-        
-        # Cambiar VPN cada N cuentas o si se fuerza
-        cambio_realizado = False
-        if forzar_cambio or (self.cuentas_creadas > 0 and self.cuentas_creadas % self.cuentas_por_vpn == 0):
-            if not forzar_cambio:
-                self.indice_vpn = (self.indice_vpn + 1) % len(self.vpn_servers)
-            cambio_realizado = True
-            if not forzar_cambio:
-                print(f"\n{'='*60}")
-                print(f"🔄 CAMBIANDO DE PAÍS (Cuenta #{self.cuentas_creadas})")
-                print(f"{'='*60}")
-        
-        vpn_server = self.vpn_servers[self.indice_vpn]
-        pais_anterior = self.vpn_actual
-        self.vpn_actual = vpn_server
-        
-        if cambio_realizado and pais_anterior:
-            print(f"  País anterior: {pais_anterior}")
-        
-        print(f"  🌍 País actual: {vpn_server}")
-        print(f"{'='*60}\n")
-        
-        # Intentar cambiar VPN usando diferentes métodos
-        try:
-            # Método 1: Usar servicio de VPN con API (ej: NordVPN, ExpressVPN)
-            # Esto requiere tener instalado el cliente VPN y usar su API
-            
-            # Método 2: Usar OpenVPN con perfiles
-            self._cambiar_vpn_openvpn(vpn_server)
-            
-            print(f"✓✓ VPN conectada a: {vpn_server}")
-        except Exception as e:
-            print(f"⚠ Error al cambiar VPN: {e}")
-            print("  Continuando sin VPN...")
-    
-    def _obtener_ip_actual(self) -> str:
-        """
-        Obtiene la IP pública actual del sistema
-        """
-        try:
-            import requests
-            response = requests.get("https://api.ipify.org?format=json", timeout=5)
-            if response.status_code == 200:
-                return response.json().get('ip', 'Desconocida')
-        except:
-            try:
-                response = requests.get("https://ifconfig.me/ip", timeout=5)
-                if response.status_code == 200:
-                    return response.text.strip()
-            except:
-                pass
-        return "No disponible"
-    
-    def _obtener_pais_por_ip(self, ip: str) -> str:
-        """
-        Obtiene el país asociado a una IP
-        """
-        try:
-            import requests
-            response = requests.get(f"https://ipapi.co/{ip}/country_name/", timeout=5)
-            if response.status_code == 200:
-                return response.text.strip()
-        except:
-            pass
-        return "Desconocido"
-    
-    def _cambiar_vpn_openvpn(self, server: str) -> None:
-        """
-        Cambia la VPN usando OpenVPN (requiere tener OpenVPN instalado)
-        """
-        import subprocess
-        import os
-        import threading
-        import queue
-        
-        # Crear carpeta vpn_profiles si no existe
-        vpn_profiles_dir = "vpn_profiles"
-        if not os.path.exists(vpn_profiles_dir):
-            os.makedirs(vpn_profiles_dir)
-            print(f"  📁 Carpeta '{vpn_profiles_dir}' creada en: {os.path.abspath(vpn_profiles_dir)}")
-            print(f"  💡 Coloca tus archivos .ovpn en esta carpeta")
-        
-        # Buscar archivos .ovpn en el directorio
-        ovpn_files = []
-        if os.path.exists(vpn_profiles_dir):
-            ovpn_files = [f for f in os.listdir(vpn_profiles_dir) if f.endswith('.ovpn')]
-        
-        if not ovpn_files:
-            print(f"  ⚠ No se encontraron perfiles OpenVPN (.ovpn) en carpeta '{vpn_profiles_dir}'")
-            print(f"  📍 Ubicación: {os.path.abspath(vpn_profiles_dir)}")
-            return
-        
-        # Seleccionar perfil basado en el servidor
-        perfil = ovpn_files[self.indice_vpn % len(ovpn_files)]
-        perfil_path = os.path.join("vpn_profiles", perfil)
-        
-        # Extraer nombre del país del archivo si es posible
-        nombre_pais = perfil.replace('.ovpn', '').replace('_', ' ').replace('-', ' ')
-        print(f"  📁 Perfil seleccionado: {perfil}")
-        print(f"  🌍 País: {nombre_pais}")
-        
-        # Verificar si el perfil .ovpn necesita credenciales
-        try:
-            with open(perfil_path, 'r', encoding='utf-8') as f:
-                contenido_ovpn = f.read()
-                necesita_auth = 'auth-user-pass' in contenido_ovpn
-                tiene_credenciales_ref = 'auth-user-pass credenciales.txt' in contenido_ovpn
-        except:
-            necesita_auth = False
-            tiene_credenciales_ref = False
-        
-        # Verificar si existe archivo de credenciales
-        credenciales_file = os.path.join(vpn_profiles_dir, "credenciales.txt")
-        tiene_credenciales = os.path.exists(credenciales_file)
-        
-        if necesita_auth and not tiene_credenciales_ref and not tiene_credenciales:
-            print(f"  ⚠ El perfil requiere credenciales pero no se encontró archivo de credenciales")
-            print(f"  💡 Ejecuta 'python configurar_credenciales_vpn.py' para configurar tus credenciales")
-        elif necesita_auth and tiene_credenciales:
-            print(f"  ✓ Archivo de credenciales encontrado")
-        
-        # Verificar IP actual antes de conectar
-        print("  🔍 Verificando IP actual...")
-        ip_antes = self._obtener_ip_actual()
-        pais_antes = self._obtener_pais_por_ip(ip_antes)
-        print(f"  📍 IP actual: {ip_antes} ({pais_antes})")
-        
-        try:
-            # Cerrar conexión VPN anterior si existe
-            print("  🔌 Desconectando VPN anterior...")
-            subprocess.run(["taskkill", "/F", "/IM", "openvpn.exe"], 
-                         capture_output=True, timeout=5)
-            time.sleep(3)  # Esperar más tiempo para desconectar completamente
-        except:
-            pass
-        
-        # Buscar OpenVPN en rutas comunes si no está en PATH
-        openvpn_exe = "openvpn"
-        rutas_comunes = [
-            r"C:\Program Files\OpenVPN\bin\openvpn.exe",
-            r"C:\Program Files (x86)\OpenVPN\bin\openvpn.exe",
-            r"C:\OpenVPN\bin\openvpn.exe"
-        ]
-        
-        # Verificar si openvpn está en PATH
-        import shutil
-        openvpn_path = shutil.which("openvpn")
-        
-        if not openvpn_path:
-            # Buscar en rutas comunes
-            for ruta_comun in rutas_comunes:
-                if os.path.exists(ruta_comun):
-                    openvpn_exe = ruta_comun
-                    print(f"  ℹ OpenVPN encontrado en: {ruta_comun}")
-                    break
-            else:
-                print("  ⚠ OpenVPN no está instalado o no está en PATH")
-                print("  💡 Instala OpenVPN y asegúrate de que esté en el PATH del sistema")
-                print("  💡 O reinicia la terminal después de agregar OpenVPN al PATH")
-                return
-        
-        # Conectar a nueva VPN
-        try:
-            print(f"  🔌 Conectando a VPN: {nombre_pais}...")
-            
-            # Cambiar al directorio del perfil para que las rutas relativas funcionen
-            directorio_actual = os.getcwd()
-            os.chdir(vpn_profiles_dir)
-            
-            # Cola para leer output en tiempo real
-            output_queue = queue.Queue()
-            
-            def leer_output(pipe, queue):
-                """Lee el output del proceso y lo pone en la cola"""
-                try:
-                    for line in iter(pipe.readline, ''):
-                        if line:
-                            queue.put(line.strip())
-                    pipe.close()
-                except:
-                    pass
-            
-            try:
-                process = subprocess.Popen(
-                    [openvpn_exe, "--config", perfil], 
-                    stdout=subprocess.PIPE, 
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-                )
-                
-                # Iniciar thread para leer output
-                output_thread = threading.Thread(target=leer_output, args=(process.stdout, output_queue))
-                output_thread.daemon = True
-                output_thread.start()
-            finally:
-                # Volver al directorio original
-                os.chdir(directorio_actual)
-            
-            # Leer logs en tiempo real mientras esperamos
-            print("  ⏳ Esperando conexión (esto puede tomar hasta 45 segundos)...")
-            necesita_credenciales = False
-            mensaje_error = None
-            conexion_establecida = False
-            tiempo_espera = 45
-            logs_importantes = []
-            
-            for i in range(tiempo_espera):
-                # Leer líneas disponibles de la cola
-                try:
-                    while True:
-                        linea = output_queue.get_nowait()
-                        if linea:
-                            linea_lower = linea.lower()
-                            logs_importantes.append(linea)
-                            
-                            # Detectar si necesita credenciales
-                            if any(palabra in linea_lower for palabra in ['auth', 'username', 'password', 'enter username', 'enter password']):
-                                necesita_credenciales = True
-                            
-                            # Detectar errores
-                            if any(palabra in linea_lower for palabra in ['error', 'failed', 'fatal', 'cannot resolve']):
-                                mensaje_error = linea[:200]
-                            
-                            # Detectar conexión exitosa
-                            if any(palabra in linea_lower for palabra in ['initialization sequence completed', 'connected', 'route', 'tun/tap']):
-                                if 'initialization sequence completed' in linea_lower:
-                                    conexion_establecida = True
-                                    print(f"  ✓ Mensaje de OpenVPN: {linea[:100]}")
-                except queue.Empty:
-                    pass
-                
-                if process.poll() is not None:
-                    # El proceso se cerró, leer todo el output restante
-                    try:
-                        while True:
-                            linea = output_queue.get_nowait()
-                            if linea:
-                                logs_importantes.append(linea)
-                                linea_lower = linea.lower()
-                                if any(palabra in linea_lower for palabra in ['auth', 'username', 'password']):
-                                    necesita_credenciales = True
-                                if any(palabra in linea_lower for palabra in ['error', 'failed']):
-                                    mensaje_error = linea[:200]
-                    except queue.Empty:
-                        pass
-                    break
-                
-                if conexion_establecida:
-                    break
-                    
-                time.sleep(1)
-            
-            # Si necesita credenciales, informar al usuario
-            if necesita_credenciales:
-                print(f"  ⚠ El perfil .ovpn requiere credenciales (usuario/contraseña)")
-                print(f"  💡 Ejecuta 'python configurar_credenciales_vpn.py' para configurar tus credenciales")
-                if logs_importantes:
-                    print(f"  📋 Últimos logs relevantes:")
-                    for log in logs_importantes[-3:]:
-                        print(f"     {log[:150]}")
-            
-            # Si hay mensaje de error, mostrarlo
-            if mensaje_error:
-                print(f"  ⚠ Mensaje de OpenVPN: {mensaje_error}")
-            
-            # Verificar si el proceso sigue corriendo
-            if process.poll() is None:
-                # Proceso sigue corriendo, esperar más tiempo y verificar IP múltiples veces
-                if conexion_establecida:
-                    print("  ✓ Conexión establecida según logs de OpenVPN")
-                else:
-                    print("  🔍 Esperando establecimiento de conexión...")
-                
-                # Verificar IP múltiples veces (algunas conexiones tardan más)
-                ip_despues = ip_antes
-                intentos_verificacion = 6
-                conexion_exitosa = False
-                
-                for intento in range(intentos_verificacion):
-                    time.sleep(5)  # Esperar 5 segundos entre verificaciones
-                    ip_despues = self._obtener_ip_actual()
-                    
-                    if ip_despues != ip_antes and ip_despues != "No disponible":
-                        conexion_exitosa = True
-                        break
-                    else:
-                        print(f"  ⏳ Intento {intento + 1}/{intentos_verificacion}: IP aún no cambió, esperando...")
-                
-                pais_despues = self._obtener_pais_por_ip(ip_despues) if ip_despues != "No disponible" else "Desconocido"
-                
-                print(f"  📍 IP final: {ip_despues} ({pais_despues})")
-                
-                # Verificar si la IP cambió
-                if conexion_exitosa:
-                    print(f"  ✓✓ VPN conectada exitosamente!")
-                    print(f"  ✓ IP cambió de {ip_antes} a {ip_despues}")
-                    print(f"  ✓ País cambió de {pais_antes} a {pais_despues}")
-                    print(f"  ℹ Proceso OpenVPN ejecutándose (PID: {process.pid})")
-                else:
-                    print(f"  ⚠ ADVERTENCIA: La IP no cambió después de {intentos_verificacion} intentos")
-                    print(f"  ⚠ IP antes: {ip_antes}, IP después: {ip_despues}")
-                    print(f"  ⚠ Posibles causas:")
-                    if necesita_credenciales:
-                        print(f"     ⚠ El perfil .ovpn requiere credenciales (usuario/contraseña)")
-                    print(f"     - El perfil .ovpn no es válido o está corrupto")
-                    print(f"     - El servidor VPN está caído o no responde")
-                    print(f"     - Necesitas permisos de administrador para OpenVPN")
-                    print(f"     - El firewall está bloqueando la conexión")
-                    print(f"  💡 Verifica los logs de OpenVPN o ejecuta manualmente:")
-                    print(f"     {openvpn_exe} --config {perfil_path}")
-                    if logs_importantes:
-                        print(f"  📋 Últimos logs de OpenVPN:")
-                        for log in logs_importantes[-5:]:
-                            print(f"     {log[:150]}")
-                    print(f"  ℹ Proceso OpenVPN ejecutándose (PID: {process.pid}) - revisa los logs")
-            else:
-                print(f"  ⚠ El proceso OpenVPN se cerró. Verifica el archivo: {perfil_path}")
-                if logs_importantes:
-                    print(f"  📋 Últimos logs de OpenVPN:")
-                    for log in logs_importantes[-10:]:
-                        print(f"     {log[:150]}")
-        except FileNotFoundError:
-            print("  ⚠ OpenVPN no encontrado")
-            print("  💡 Instala OpenVPN y asegúrate de que esté en el PATH del sistema")
-            print("  💡 O reinicia la terminal después de agregar OpenVPN al PATH")
-        except Exception as e:
-            print(f"  ⚠ Error al conectar OpenVPN: {e}")
-            import traceback
-            traceback.print_exc()
     
     def inicializar_navegador(self) -> None:
         """Inicializa el navegador Firefox sin mostrar que es automatizado"""
@@ -447,9 +94,6 @@ class BotRegistroMicrosoft:
         firefox_options.set_preference("toolkit.telemetry.server", "")
         firefox_options.set_preference("datareporting.policy.dataSubmissionEnabled", False)
         firefox_options.set_preference("datareporting.healthreport.uploadEnabled", False)
-        
-        # VPN se maneja a nivel del sistema, no en Firefox
-        # Firefox usará automáticamente la conexión VPN activa del sistema
         
         try:
             # Configurar el servicio para minimizar señales
@@ -575,8 +219,7 @@ class BotRegistroMicrosoft:
             except:
                 pass  # Si falla, continuar
             
-            modo = "con VPN" if self.usar_vpn else "modo normal"
-            print(f"✓ Navegador Firefox inicializado en modo STEALTH ({modo})")
+            print(f"✓ Navegador Firefox inicializado en modo STEALTH")
         except Exception as e:
             print(f"Error al inicializar el navegador: {e}")
             raise
@@ -1692,21 +1335,8 @@ class BotRegistroMicrosoft:
     def _reiniciar_navegador(self) -> None:
         """
         Cierra la pestaña/ventana actual y abre una nueva
-        También cambia de VPN si está habilitada
         """
         try:
-            # Cambiar de VPN cuando se detecta error
-            if self.usar_vpn and self.vpn_servers:
-                print("\n" + "="*60)
-                print("🔄 CAMBIANDO DE VPN POR ERROR DETECTADO")
-                print("="*60)
-                # Avanzar al siguiente país
-                self.indice_vpn = (self.indice_vpn + 1) % len(self.vpn_servers)
-                print(f"  🌍 Cambiando a país: {self.vpn_servers[self.indice_vpn]}")
-                self._cambiar_vpn(forzar_cambio=True)
-                time.sleep(8)  # Esperar a que la VPN se conecte
-                print("="*60 + "\n")
-            
             if self.driver:
                 print("🔄 Cerrando pestaña actual...")
                 # Cerrar todas las pestañas excepto la primera
@@ -1863,23 +1493,6 @@ class BotRegistroMicrosoft:
             self.cuentas_creadas += 1
             print(f"\n📊 Cuenta #{self.cuentas_creadas}")
             
-            # Si usa VPN y es momento de cambiar, cambiar VPN
-            if self.usar_vpn and self.vpn_servers:
-                # Cambiar VPN antes de crear la primera cuenta también
-                if self.cuentas_creadas == 1:
-                    print("\n" + "="*60)
-                    print("🌍 CONFIGURANDO VPN INICIAL")
-                    print("="*60)
-                    self._cambiar_vpn()
-                    time.sleep(5)  # Esperar a que la VPN se conecte
-                elif (self.cuentas_creadas - 1) % self.cuentas_por_vpn == 0:
-                    if self.driver:
-                        self.driver.quit()
-                        self.driver = None
-                    time.sleep(2)
-                    self._cambiar_vpn()
-                    time.sleep(5)  # Esperar a que la VPN se conecte
-            
             # Crear correo temporal
             correo = self.crear_correo_temporal()
             
@@ -1986,7 +1599,7 @@ class BotRegistroMicrosoft:
                 self.driver.quit()
 
 
-def abrir_registro_microsoft(usar_reconocimiento: bool = True, posicion_x: int = 0, posicion_y: int = 0, usar_vpn: bool = False, vpn_servers: list = None) -> None:
+def abrir_registro_microsoft(usar_reconocimiento: bool = True, posicion_x: int = 0, posicion_y: int = 0) -> None:
     """
     Función principal que abre el registro de Microsoft con correo temporal
     
@@ -1994,10 +1607,8 @@ def abrir_registro_microsoft(usar_reconocimiento: bool = True, posicion_x: int =
         usar_reconocimiento: Si es True, usa reconocimiento visual (por defecto)
         posicion_x: Coordenada X manual (solo si usar_reconocimiento=False)
         posicion_y: Coordenada Y manual (solo si usar_reconocimiento=False)
-        usar_vpn: Si es True, usa VPN y rota cada 2-3 cuentas
-        vpn_servers: Lista de servidores VPN o países en formato ["país1", "país2"]
     """
-    bot = BotRegistroMicrosoft(usar_reconocimiento=usar_reconocimiento, posicion_x=posicion_x, posicion_y=posicion_y, usar_vpn=usar_vpn, vpn_servers=vpn_servers)
+    bot = BotRegistroMicrosoft(usar_reconocimiento=usar_reconocimiento, posicion_x=posicion_x, posicion_y=posicion_y)
     bot.ejecutar()
 
 
@@ -2029,50 +1640,5 @@ if __name__ == "__main__":
     if usar_reconocimiento:
         print("📌 Modo reconocimiento visual activado")
     
-    # Cargar servidores VPN si existe el archivo o hay perfiles .ovpn
-    vpn_servers = None
-    usar_vpn = False
-    
-    try:
-        import os
-        # Primero verificar si hay archivos .ovpn en vpn_profiles
-        vpn_profiles_dir = "vpn_profiles"
-        ovpn_files = []
-        if os.path.exists(vpn_profiles_dir):
-            ovpn_files = [f for f in os.listdir(vpn_profiles_dir) if f.endswith('.ovpn')]
-        
-        if ovpn_files:
-            # Si hay archivos .ovpn, usarlos directamente
-            vpn_servers = [f.replace('.ovpn', '').replace('_', ' ').replace('-', ' ') for f in ovpn_files]
-            usar_vpn = True
-            print(f"🌐 VPN habilitado: {len(vpn_servers)} perfiles OpenVPN encontrados")
-            print(f"  📁 Perfiles: {', '.join([f.replace('.ovpn', '') for f in ovpn_files[:5]])}{'...' if len(ovpn_files) > 5 else ''}")
-        else:
-            # Si no hay .ovpn, intentar leer vpn_servers.txt
-            vpn_file = None
-            if os.path.exists("vpn_servers.txt"):
-                vpn_file = "vpn_servers.txt"
-            elif os.path.exists("paises.txt"):
-                vpn_file = "paises.txt"
-            
-            if vpn_file:
-                with open(vpn_file, "r", encoding='utf-8') as f:
-                    vpn_servers = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
-                if vpn_servers:
-                    usar_vpn = True
-                    print(f"🌐 VPN habilitado: {len(vpn_servers)} servidores/países cargados desde {vpn_file}")
-                else:
-                    print(f"⚠ Archivo {vpn_file} vacío (solo comentarios)")
-                    print(f"  💡 Agrega países al archivo o coloca archivos .ovpn en la carpeta 'vpn_profiles'")
-            else:
-                print("ℹ No se encontraron perfiles VPN")
-                print("  💡 Opciones:")
-                print("    1. Coloca archivos .ovpn en la carpeta 'vpn_profiles'")
-                print("    2. O crea vpn_servers.txt con la lista de países")
-    except Exception as e:
-        print(f"⚠ Error al cargar servidores VPN: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    abrir_registro_microsoft(usar_reconocimiento=usar_reconocimiento, posicion_x=posicion_x, posicion_y=posicion_y, usar_vpn=usar_vpn, vpn_servers=vpn_servers)
+    abrir_registro_microsoft(usar_reconocimiento=usar_reconocimiento, posicion_x=posicion_x, posicion_y=posicion_y)
 
