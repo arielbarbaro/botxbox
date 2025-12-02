@@ -1376,29 +1376,51 @@ class BotRegistroMicrosoft:
     
     def _presionar_y_mantener_captcha(self) -> None:
         """
-        Presiona Tab 1 vez y mantiene Enter presionado para el captcha
+        Espera a que cargue la página, luego presiona Enter 1 vez, Tab, espera 10 segundos y presiona Enter de nuevo
         """
         try:
             print("\n🔐 Manejando captcha 'Press and hold'...")
-            time.sleep(2)  # Esperar a que aparezca el captcha
+            
+            # Esperar a que la página cargue completamente
+            print("  Esperando a que la página cargue completamente...")
+            max_espera = 30  # Máximo 30 segundos esperando
+            tiempo_esperado = 0
+            while tiempo_esperado < max_espera:
+                estado = self.driver.execute_script("return document.readyState")
+                if estado == "complete":
+                    # Esperar un poco más para asegurar que todo esté cargado
+                    time.sleep(2)
+                    print("  ✓ Página cargada completamente")
+                    break
+                time.sleep(0.5)
+                tiempo_esperado += 0.5
+            
+            # Esperar adicional para que el captcha aparezca
+            time.sleep(2)
             
             actions = ActionChains(self.driver)
             
-            # Tab 1 vez
-            print("  Presionando Tab 1 vez...")
+            # Enter 1 vez
+            print("  Presionando Enter 1 vez...")
+            actions.send_keys(Keys.ENTER).perform()
+            time.sleep(0.5)
+            
+            # Tab
+            print("  Presionando Tab...")
             actions.send_keys(Keys.TAB).perform()
             time.sleep(0.5)
             
-            # Mantener Enter presionado durante 10 segundos
-            tiempo_mantenido = 10.0
-            print(f"  Manteniendo Enter presionado por {tiempo_mantenido} segundos...")
+            # Esperar 10 segundos
+            tiempo_espera = 10.0
+            print(f"  Esperando {tiempo_espera} segundos...")
+            time.sleep(tiempo_espera)
             
-            actions.key_down(Keys.ENTER).perform()
-            time.sleep(tiempo_mantenido)
-            actions.key_up(Keys.ENTER).perform()
-            
+            # Enter de nuevo
+            print("  Presionando Enter de nuevo...")
+            actions.send_keys(Keys.ENTER).perform()
             time.sleep(1)
-            print("✓✓ Captcha completado (Enter mantenido)")
+            
+            print("✓✓ Captcha completado")
             
         except Exception as e:
             print(f"⚠ Error al manejar captcha: {e}")
