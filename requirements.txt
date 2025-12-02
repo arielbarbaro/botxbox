@@ -1,0 +1,9 @@
+# Requerido: Python 3.11
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+requests>=2.31.0
+pyautogui>=0.9.54
+pytesseract>=0.3.10
+Pillow>=10.0.0
+pyperclip>=1.8.2
+
