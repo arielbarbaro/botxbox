@@ -4,12 +4,12 @@ Requerido: Python 3.11
 """
 
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 from correo_temporal import CorreoTemporal
 import time
 import sys
@@ -56,287 +56,291 @@ class BotRegistroMicrosoft:
         self.cuentas_creadas = 0
     
     def inicializar_navegador(self) -> None:
-        """Inicializa el navegador Firefox sin mostrar que es automatizado"""
-        firefox_options = Options()
-        
-        # Modo privado (incógnito)
-        firefox_options.add_argument("--private")
-        
-        # TÉCNICAS AVANZADAS PARA OCULTAR AUTOMATIZACIÓN
-        # Deshabilitar completamente el indicador de webdriver
-        firefox_options.set_preference("dom.webdriver.enabled", False)
-        firefox_options.set_preference("useAutomationExtension", False)
-        
-        # Ocultar marionette (sistema de automatización de Firefox)
-        firefox_options.set_preference("marionette.enabled", True)  # Necesario para Selenium, pero lo ocultamos
-        
-        # Deshabilitar notificaciones de automatización
-        firefox_options.set_preference("dom.disable_beforeunload", True)
-        firefox_options.set_preference("dom.disable_window_move_resize", True)
-        firefox_options.set_preference("dom.disable_window_open_feature.close", True)
-        
-        # Preferencias para parecer más humano
-        firefox_options.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0")
-        firefox_options.set_preference("dom.webnotifications.enabled", False)
-        firefox_options.set_preference("media.navigator.enabled", False)
-        firefox_options.set_preference("media.peerconnection.enabled", False)
-        firefox_options.set_preference("privacy.trackingprotection.enabled", False)
-        firefox_options.set_preference("browser.safebrowsing.malware.enabled", False)
-        firefox_options.set_preference("browser.safebrowsing.phishing.enabled", False)
-        
-        # Deshabilitar logs y señales de automatización
-        firefox_options.set_preference("devtools.console.stdout.enabled", False)
-        firefox_options.set_preference("devtools.console.stdout.chrome", False)
-        firefox_options.log.level = "fatal"
-        
-        # Ocultar indicadores de automatización en la UI
-        firefox_options.set_preference("toolkit.telemetry.enabled", False)
-        firefox_options.set_preference("toolkit.telemetry.server", "")
-        firefox_options.set_preference("datareporting.policy.dataSubmissionEnabled", False)
-        firefox_options.set_preference("datareporting.healthreport.uploadEnabled", False)
-        
+        """Inicializa el navegador Brave usando Selenium estándar con técnicas anti-detección"""
         try:
-            # Configurar el servicio para minimizar señales
-            service = FirefoxService(GeckoDriverManager().install())
+            # Opciones de Brave (basado en Chromium)
+            brave_options = ChromeOptions()
             
-            self.driver = webdriver.Firefox(service=service, options=firefox_options)
+            # Buscar la ruta de Brave
+            import os
+            brave_paths = [
+                r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+                r"C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe",
+                os.path.expanduser(r"~\AppData\Local\BraveSoftware\Brave-Browser\Application\brave.exe")
+            ]
             
-            # Scripts avanzados para ocultar automatización en Firefox
-            stealth_script = '''
-                (function() {
-                    // TÉCNICA 1: Eliminar webdriver completamente
-                    try {
-                        delete Object.getPrototypeOf(navigator).webdriver;
-                    } catch(e) {}
-                    
-                    // TÉCNICA 2: Redefinir webdriver como undefined
-                    try {
-                        Object.defineProperty(navigator, 'webdriver', {
-                            get: () => undefined,
-                            configurable: true,
-                            enumerable: false
-                        });
-                    } catch(e) {
-                        try {
-                            navigator.webdriver = undefined;
-                        } catch(e2) {}
-                    }
-                    
-                    // TÉCNICA 3: Ocultar marionette
-                    try {
-                        Object.defineProperty(navigator, 'marionette', {
-                            get: () => undefined,
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 4: Ocultar permisos
-                    const originalQuery = window.navigator.permissions.query;
-                    if (originalQuery) {
-                        window.navigator.permissions.query = (parameters) => (
-                            parameters.name === 'notifications' ?
-                                Promise.resolve({ state: Notification.permission }) :
-                                originalQuery(parameters)
-                        );
-                    }
-                    
-                    // TÉCNICA 5: Simular plugins reales
-                    try {
-                        Object.defineProperty(navigator, 'plugins', {
-                            get: () => {
-                                const plugins = [];
-                                for (let i = 0; i < 5; i++) {
-                                    plugins.push({
-                                        name: `Plugin ${i}`,
-                                        description: `Description ${i}`,
-                                        filename: `plugin${i}.dll`
-                                    });
-                                }
-                                return plugins;
-                            },
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 6: Simular lenguajes
-                    try {
-                        Object.defineProperty(navigator, 'languages', {
-                            get: () => ['en-US', 'en'],
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 7: Simular conexión
-                    try {
-                        Object.defineProperty(navigator, 'connection', {
-                            get: () => ({
-                                rtt: 50,
-                                downlink: 10,
-                                effectiveType: '4g',
-                                saveData: false
-                            }),
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 8: Ocultar señales de Selenium en window
-                    try {
-                        delete window.__selenium_unwrapped;
-                        delete window.__selenium_evaluate;
-                        delete window.__fxdriver_evaluate;
-                        delete window.__driver_evaluate;
-                        delete window.__webdriver_evaluate;
-                        delete window.__selenium_unwrapped;
-                        delete window.__fxdriver_unwrapped;
-                        delete window.__driver_unwrapped;
-                        delete window.__webdriver_unwrapped;
-                    } catch(e) {}
-                    
-                    // TÉCNICA 9: Ocultar document.$cdc_ y document.$chrome_async
-                    try {
-                        Object.defineProperty(document, '$cdc_', {
-                            get: () => undefined,
-                            configurable: true
-                        });
-                        Object.defineProperty(document, '$chrome_async', {
-                            get: () => undefined,
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 10: Ocultar en document
-                    try {
-                        delete document.$cdc_asdjflasutopfhvcZLmcfl_;
-                        delete document.$chrome_asyncScriptInfo;
-                    } catch(e) {}
-                })();
-            '''
+            brave_executable = None
+            for path in brave_paths:
+                if os.path.exists(path):
+                    brave_executable = path
+                    break
             
-            # Ejecutar script de stealth ANTES de cargar cualquier página
-            # También lo ejecutaremos después de cada navegación
+            if brave_executable:
+                brave_options.binary_location = brave_executable
+                print(f"✓ Brave encontrado en: {brave_executable}")
+            else:
+                print("⚠ Brave no encontrado en las rutas comunes, intentando usar ChromeDriver...")
+            
+            # Configuraciones básicas
+            brave_options.add_argument("--disable-dev-shm-usage")
+            brave_options.add_argument("--no-sandbox")
+            brave_options.add_argument("--disable-gpu")
+            brave_options.add_argument("--window-size=1920,1080")
+            brave_options.add_argument("--disable-blink-features=AutomationControlled")
+            
+            # Preferencias para parecer más humano
+            prefs = {
+                "credentials_enable_service": False,
+                "profile.password_manager_enabled": False,
+                "profile.default_content_setting_values.notifications": 1
+            }
+            brave_options.add_experimental_option("prefs", prefs)
+            
+            # Excluir la automatización de las opciones
+            brave_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            brave_options.add_experimental_option('useAutomationExtension', False)
+            
+            # Configurar el servicio (ChromeDriver funciona con Brave)
+            service = ChromeService(ChromeDriverManager().install())
+            
+            # Inicializar Brave
+            self.driver = webdriver.Chrome(service=service, options=brave_options)
+            
+            # Establecer tamaño de ventana
+            self.driver.set_window_size(1920, 1080)
+            self.driver.set_window_position(0, 0)
+            
+            # Ejecutar script de stealth para ocultar webdriver
             try:
-                self.driver.execute_script(stealth_script)
+                self.driver.execute_script(self._obtener_stealth_script())
             except:
-                pass  # Si falla, continuar
+                pass
             
-            print(f"✓ Navegador Firefox inicializado en modo STEALTH")
+            print(f"✓ Navegador Brave inicializado con Selenium (anti-detección)")
         except Exception as e:
             print(f"Error al inicializar el navegador: {e}")
+            print("Asegúrate de tener Brave instalado en tu sistema")
             raise
     
+    def _cerrar_navegador_seguro(self) -> None:
+        """Cierra el navegador de forma segura, evitando errores comunes"""
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception as e:
+                # Ignorar errores comunes al cerrar (especialmente con undetected-chromedriver)
+                pass
+            finally:
+                self.driver = None
+    
+    def _obtener_stealth_script(self) -> str:
+        """Retorna el script de stealth mejorado"""
+        return '''
+            (function() {
+                // TÉCNICA 1: Eliminar webdriver completamente
+                try {
+                    delete Object.getPrototypeOf(navigator).webdriver;
+                } catch(e) {}
+                
+                // TÉCNICA 2: Redefinir webdriver como undefined/false
+                try {
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => false,
+                        configurable: true,
+                        enumerable: false
+                    });
+                } catch(e) {
+                    try {
+                        navigator.webdriver = false;
+                    } catch(e2) {}
+                }
+                
+                // TÉCNICA 3: Ocultar marionette completamente
+                try {
+                    Object.defineProperty(navigator, 'marionette', {
+                        get: () => undefined,
+                        configurable: true,
+                        enumerable: false
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 4: Ocultar permisos de forma inteligente
+                const originalQuery = window.navigator.permissions.query;
+                if (originalQuery) {
+                    window.navigator.permissions.query = (parameters) => (
+                        parameters.name === 'notifications' ?
+                            Promise.resolve({ state: Notification.permission }) :
+                            originalQuery(parameters)
+                    );
+                }
+                
+                // TÉCNICA 5: Simular plugins reales de Firefox
+                try {
+                    Object.defineProperty(navigator, 'plugins', {
+                        get: () => {
+                            const plugins = [
+                                { name: 'PDF Viewer', description: 'Portable Document Format', filename: 'internal-pdf-viewer' },
+                                { name: 'OpenH264 Video Codec', description: 'OpenH264 Video Codec provided by Cisco Systems, Inc.', filename: 'gmp-gmpopenh264' },
+                                { name: 'Widevine Content Decryption Module', description: 'Widevine Content Decryption Module provided by Google Inc.', filename: 'gmp-widevinecdm' }
+                            ];
+                            return plugins;
+                        },
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 6: Simular lenguajes reales
+                try {
+                    Object.defineProperty(navigator, 'languages', {
+                        get: () => ['en-US', 'en'],
+                        configurable: true
+                    });
+                    Object.defineProperty(navigator, 'language', {
+                        get: () => 'en-US',
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 7: Simular conexión realista
+                try {
+                    Object.defineProperty(navigator, 'connection', {
+                        get: () => ({
+                            rtt: 50,
+                            downlink: 10,
+                            effectiveType: '4g',
+                            saveData: false,
+                            onchange: null
+                        }),
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 8: Ocultar todas las señales de Selenium en window
+                const propsToDelete = [
+                    '__selenium_unwrapped',
+                    '__selenium_evaluate',
+                    '__fxdriver_evaluate',
+                    '__driver_evaluate',
+                    '__webdriver_evaluate',
+                    '__selenium_unwrapped',
+                    '__fxdriver_unwrapped',
+                    '__driver_unwrapped',
+                    '__webdriver_unwrapped',
+                    '__webdriver_script_fn',
+                    '__webdriver_script_func',
+                    '__webdriver_script_fn',
+                    '__selenium_id',
+                    '__driver_evaluate',
+                    '__webdriver_evaluate',
+                    '__fxdriver_evaluate',
+                    '__driver_unwrapped',
+                    '__webdriver_unwrapped',
+                    '__fxdriver_unwrapped',
+                    '__selenium_unwrapped',
+                    '__webdriver_script_function',
+                    '__webdriver_script_func',
+                    '__webdriver_script_fn',
+                    '__fxdriver_unwrapped',
+                    '__driver_unwrapped',
+                    '__webdriver_unwrapped',
+                    '__selenium_unwrapped',
+                    'callPhantom',
+                    '_phantom',
+                    '__phantomas',
+                    'Buffer',
+                    'emit',
+                    'spawn'
+                ];
+                
+                propsToDelete.forEach(prop => {
+                    try {
+                        delete window[prop];
+                    } catch(e) {}
+                });
+                
+                // TÉCNICA 9: Ocultar document.$cdc_ y document.$chrome_async
+                try {
+                    Object.defineProperty(document, '$cdc_', {
+                        get: () => undefined,
+                        configurable: true
+                    });
+                    Object.defineProperty(document, '$chrome_async', {
+                        get: () => undefined,
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 10: Ocultar propiedades en document
+                const docPropsToDelete = [
+                    '$cdc_asdjflasutopfhvcZLmcfl_',
+                    '$chrome_asyncScriptInfo',
+                    '__selenium_unwrapped',
+                    '__webdriver_evaluate',
+                    '__driver_evaluate',
+                    '__fxdriver_evaluate',
+                    '__webdriver_script_fn',
+                    '__webdriver_script_func',
+                    '__webdriver_script_function',
+                    '__selenium_id',
+                    '__driver_evaluate',
+                    '__webdriver_evaluate',
+                    '__fxdriver_evaluate'
+                ];
+                
+                docPropsToDelete.forEach(prop => {
+                    try {
+                        delete document[prop];
+                    } catch(e) {}
+                });
+                
+                // TÉCNICA 11: Ocultar en window.chrome
+                try {
+                    if (window.chrome) {
+                        Object.defineProperty(window.chrome, 'runtime', {
+                            get: () => undefined,
+                            configurable: true
+                        });
+                    }
+                } catch(e) {}
+                
+                // TÉCNICA 12: Simular hardwareConcurrency realista
+                try {
+                    Object.defineProperty(navigator, 'hardwareConcurrency', {
+                        get: () => 8,
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 13: Simular deviceMemory
+                try {
+                    Object.defineProperty(navigator, 'deviceMemory', {
+                        get: () => 8,
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 14: Ocultar automation flags
+                try {
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => false,
+                        configurable: true
+                    });
+                } catch(e) {}
+                
+                // TÉCNICA 15: Simular platform realista
+                try {
+                    Object.defineProperty(navigator, 'platform', {
+                        get: () => 'Win32',
+                        configurable: true
+                    });
+                } catch(e) {}
+            })();
+        '''
+    
     def _ejecutar_stealth_script(self) -> None:
-        """Ejecuta el script de stealth en la página actual (para Firefox)"""
+        """Ejecuta el script de stealth en la página actual (para Chrome)"""
         try:
-            stealth_script = '''
-                (function() {
-                    // TÉCNICA 1: Eliminar webdriver completamente
-                    try {
-                        delete Object.getPrototypeOf(navigator).webdriver;
-                    } catch(e) {}
-                    
-                    // TÉCNICA 2: Redefinir webdriver como undefined
-                    try {
-                        Object.defineProperty(navigator, 'webdriver', {
-                            get: () => undefined,
-                            configurable: true,
-                            enumerable: false
-                        });
-                    } catch(e) {
-                        try {
-                            navigator.webdriver = undefined;
-                        } catch(e2) {}
-                    }
-                    
-                    // TÉCNICA 3: Ocultar marionette
-                    try {
-                        Object.defineProperty(navigator, 'marionette', {
-                            get: () => undefined,
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 4: Ocultar permisos
-                    const originalQuery = window.navigator.permissions.query;
-                    if (originalQuery) {
-                        window.navigator.permissions.query = (parameters) => (
-                            parameters.name === 'notifications' ?
-                                Promise.resolve({ state: Notification.permission }) :
-                                originalQuery(parameters)
-                        );
-                    }
-                    
-                    // TÉCNICA 5: Simular plugins reales
-                    try {
-                        Object.defineProperty(navigator, 'plugins', {
-                            get: () => {
-                                const plugins = [];
-                                for (let i = 0; i < 5; i++) {
-                                    plugins.push({
-                                        name: `Plugin ${i}`,
-                                        description: `Description ${i}`,
-                                        filename: `plugin${i}.dll`
-                                    });
-                                }
-                                return plugins;
-                            },
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 6: Simular lenguajes
-                    try {
-                        Object.defineProperty(navigator, 'languages', {
-                            get: () => ['en-US', 'en'],
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 7: Simular conexión
-                    try {
-                        Object.defineProperty(navigator, 'connection', {
-                            get: () => ({
-                                rtt: 50,
-                                downlink: 10,
-                                effectiveType: '4g',
-                                saveData: false
-                            }),
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 8: Ocultar señales de Selenium en window
-                    try {
-                        delete window.__selenium_unwrapped;
-                        delete window.__selenium_evaluate;
-                        delete window.__fxdriver_evaluate;
-                        delete window.__driver_evaluate;
-                        delete window.__webdriver_evaluate;
-                        delete window.__selenium_unwrapped;
-                        delete window.__fxdriver_unwrapped;
-                        delete window.__driver_unwrapped;
-                        delete window.__webdriver_unwrapped;
-                    } catch(e) {}
-                    
-                    // TÉCNICA 9: Ocultar document.$cdc_ y document.$chrome_async
-                    try {
-                        Object.defineProperty(document, '$cdc_', {
-                            get: () => undefined,
-                            configurable: true
-                        });
-                        Object.defineProperty(document, '$chrome_async', {
-                            get: () => undefined,
-                            configurable: true
-                        });
-                    } catch(e) {}
-                    
-                    // TÉCNICA 10: Ocultar en document
-                    try {
-                        delete document.$cdc_asdjflasutopfhvcZLmcfl_;
-                        delete document.$chrome_asyncScriptInfo;
-                    } catch(e) {}
-                })();
-            '''
-            self.driver.execute_script(stealth_script)
+            self.driver.execute_script(self._obtener_stealth_script())
         except:
             pass  # Si falla, continuar sin el script
     
@@ -374,7 +378,7 @@ class BotRegistroMicrosoft:
         if not self.driver:
             self.inicializar_navegador()
         
-        self.url_registro = "https://signup.live.com/signup?contextid=D211B384E9EB2FFC&opid=408B0DB90A982CE4&bk=1764613783&sru=https://login.live.com/oauth20_authorize.srf%3fclient_id%3d1f907974-e22b-4810-a9de-d9647380c97e%26client_id%3d1f907974-e22b-4810-a9de-d9647380c97e%26contextid%3dD211B384E9EB2FFC%26opid%3d408B0DB90A982CE4%26mkt%3dEN-US%26lc%3d1033%26bk%3d1764613783%26uaid%3d236c1c5e03ad4d18962ca0f33056a226&uiflavor=web&fluent=2&client_id=000000004C5BC0A9&lic=1&mkt=EN-US&lc=1033&uaid=236c1c5e03ad4d18962ca0f33056a226"
+        self.url_registro = "https://signup.live.com/signup?contextid=EC8FC8038E6EB570&opid=96A696566782DCA2&bk=1764644995&sru=https://login.live.com/oauth20_authorize.srf%3fclient_id%3d1f907974-e22b-4810-a9de-d9647380c97e%26client_id%3d1f907974-e22b-4810-a9de-d9647380c97e%26contextid%3dEC8FC8038E6EB570%26opid%3d96A696566782DCA2%26mkt%3dEN-US%26lc%3d1033%26bk%3d1764644995%26uaid%3db39806f370c44480a96d42ba11a36b04&uiflavor=web&fluent=2&client_id=000000004C5BC0A9&lic=1&mkt=EN-US&lc=1033&uaid=b39806f370c44480a96d42ba11a36b04"
         
         print("Abriendo página de registro de Microsoft...")
         self.driver.get(self.url_registro)
@@ -1042,42 +1046,49 @@ class BotRegistroMicrosoft:
     
     def _pegar_codigo_verificacion(self, codigo: str) -> None:
         """
-        Busca el campo de código de verificación y pega el código
+        Busca la primera casilla del código y pega el código de verificación
         
         Args:
             codigo: Código de verificación a pegar
         """
         try:
-            print(f"\n🔍 Buscando campo para código de verificación...")
-            time.sleep(2)  # Esperar a que aparezca el campo
+            print(f"\n📋 Pegando código de verificación: {codigo}")
+            time.sleep(2)  # Esperar a que aparezcan los campos
             
+            # Buscar la primera casilla del código de verificación
             campo = None
+            print("  Buscando la primera casilla del código...")
             
-            # Método 1: Buscar input de tipo text o number
+            # Buscar inputs de tipo text, number o tel que parezcan ser campos de código
             try:
                 inputs = self.driver.find_elements(By.TAG_NAME, "input")
+                campos_codigo = []
+                
                 for inp in inputs:
                     if inp.is_displayed() and inp.is_enabled():
                         tipo = inp.get_attribute('type') or 'text'
                         nombre = inp.get_attribute('name') or ''
                         id_attr = inp.get_attribute('id') or ''
                         placeholder = inp.get_attribute('placeholder') or ''
+                        maxlength = inp.get_attribute('maxlength') or ''
                         
-                        # Buscar campos relacionados con código, verificación, OTP
-                        if (tipo in ['text', 'number', 'tel'] and 
-                            ('code' in nombre.lower() or 'verification' in nombre.lower() or 
-                             'otp' in nombre.lower() or 'code' in id_attr.lower() or
-                             'code' in placeholder.lower() or 'código' in placeholder.lower())):
-                            campo = inp
-                            print(f"✓ Campo encontrado por atributos: {nombre or id_attr}")
-                            break
-            except Exception as e:
-                print(f"⚠ Error buscando por atributos: {e}")
-            
-            # Método 2: Buscar primer input vacío visible
-            if not campo:
-                try:
-                    inputs = self.driver.find_elements(By.TAG_NAME, "input")
+                        # Buscar campos que parezcan ser de código (text, number, tel)
+                        # y que tengan maxlength de 1 (casillas individuales)
+                        if tipo in ['text', 'number', 'tel']:
+                            # Si tiene maxlength=1, es probablemente una casilla de código
+                            if maxlength == '1' or 'code' in nombre.lower() or 'code' in id_attr.lower():
+                                location = inp.location
+                                if location['y'] > 100:  # Filtrar campos fuera del área principal
+                                    campos_codigo.append((inp, location['x']))
+                
+                # Ordenar por posición X (de izquierda a derecha) y tomar el primero
+                if campos_codigo:
+                    campos_codigo.sort(key=lambda x: x[1])
+                    campo = campos_codigo[0][0]
+                    print(f"  ✓ Primera casilla encontrada (posición X: {campos_codigo[0][1]})")
+                else:
+                    # Si no encontramos casillas con maxlength=1, buscar el primer input vacío
+                    print("  Buscando primer input vacío...")
                     for inp in inputs:
                         if inp.is_displayed() and inp.is_enabled():
                             tipo = inp.get_attribute('type') or 'text'
@@ -1086,50 +1097,121 @@ class BotRegistroMicrosoft:
                             
                             if tipo in ['text', 'number', 'tel'] and not valor and location['y'] > 100:
                                 campo = inp
-                                print("✓ Campo encontrado (primer input vacío)")
+                                print("  ✓ Primer input vacío encontrado")
                                 break
-                except Exception as e:
-                    print(f"⚠ Error buscando primer input: {e}")
+            except Exception as e:
+                print(f"  ⚠ Error buscando campo: {e}")
             
-            if campo:
-                print(f"✓ Campo encontrado, pegando código: {codigo}")
-                
-                # Hacer scroll al campo
+            if not campo:
+                print("  ⚠ No se encontró el campo, usando método de tabs...")
+                # Fallback: presionar tabs pero ir hacia atrás primero
+                actions = ActionChains(self.driver)
+                # Presionar Shift+Tab para ir hacia atrás si estamos en la tercera casilla
+                actions.key_down(Keys.SHIFT).send_keys(Keys.TAB).key_up(Keys.SHIFT).perform()
+                time.sleep(0.2)
+                actions.key_down(Keys.SHIFT).send_keys(Keys.TAB).key_up(Keys.SHIFT).perform()
+                time.sleep(0.3)
+                campo_activo = self.driver.switch_to.active_element
+            else:
+                # Hacer scroll al campo y enfocarlo
                 self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", campo)
                 time.sleep(0.5)
-                
-                # Enfocar y hacer clic
-                self.driver.execute_script("arguments[0].focus();", campo)
-                time.sleep(0.3)
                 campo.click()
                 time.sleep(0.3)
-                
-                # Limpiar y escribir el código
-                campo.clear()
-                time.sleep(0.2)
-                campo.send_keys(codigo)
-                time.sleep(0.5)
-                
-                # Verificar
-                valor = campo.get_attribute('value') or ''
-                if codigo in valor or valor == codigo:
-                    print(f"✓✓ Código escrito exitosamente en el campo: {codigo}")
-                else:
-                    # Intentar pegar con Ctrl+V
-                    print("⚠ Escritura directa falló, intentando pegar con Ctrl+V...")
-                    campo.clear()
-                    time.sleep(0.2)
-                    actions = ActionChains(self.driver)
-                    actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-                    time.sleep(0.5)
-                    
-                    valor = campo.get_attribute('value') or ''
-                    if codigo in valor or valor == codigo:
-                        print(f"✓✓ Código pegado exitosamente: {codigo}")
-                    else:
-                        print(f"⚠ El código no se pegó correctamente. Valor en campo: {valor}")
+                campo_activo = campo
+            
+            # Crear ActionChains para las acciones
+            actions = ActionChains(self.driver)
+            
+            # Copiar código al portapapeles ANTES de limpiar
+            if PYPERCLIP_AVAILABLE:
+                pyperclip.copy(codigo)
+                print("  ✓ Código copiado al portapapeles")
             else:
-                print("⚠ No se encontró el campo de código de verificación")
+                try:
+                    self.driver.execute_script(f"navigator.clipboard.writeText('{codigo}');")
+                    time.sleep(0.3)
+                    print("  ✓ Código copiado al portapapeles (JavaScript)")
+                except:
+                    print("  ⚠ No se pudo copiar al portapapeles, escribiendo directamente")
+            
+            # Limpiar cualquier contenido existente
+            print("  Limpiando campo...")
+            if campo_activo:
+                campo_activo.clear()
+                time.sleep(0.2)
+            else:
+                actions.send_keys(Keys.CONTROL + 'a').perform()
+                time.sleep(0.1)
+                actions.send_keys(Keys.DELETE).perform()
+                time.sleep(0.2)
+            
+            # Método 1: Intentar pegar con Ctrl+V
+            print("  Intentando pegar con Ctrl+V...")
+            actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+            time.sleep(0.5)
+            
+            # Verificar si se pegó correctamente
+            pegado_exitoso = False
+            try:
+                if campo_activo:
+                    valor = campo_activo.get_attribute('value') or ''
+                else:
+                    campo_activo = self.driver.switch_to.active_element
+                    valor = campo_activo.get_attribute('value') or ''
+                
+                if codigo in valor or valor == codigo or valor.strip() == codigo.strip():
+                    print(f"✓✓ Código pegado exitosamente: {codigo}")
+                    pegado_exitoso = True
+                else:
+                    print(f"⚠ Pegado con Ctrl+V falló. Valor en campo: '{valor}' (esperado: '{codigo}')")
+            except Exception as e:
+                print(f"⚠ No se pudo verificar el valor: {e}")
+            
+            # Método 2: Si no se pegó, escribir directamente carácter por carácter
+            if not pegado_exitoso:
+                print("  Intentando escribir el código directamente...")
+                try:
+                    # Limpiar de nuevo
+                    if campo_activo:
+                        campo_activo.clear()
+                        time.sleep(0.2)
+                        # Escribir el código directamente en el campo
+                        campo_activo.send_keys(codigo)
+                    else:
+                        actions.send_keys(Keys.CONTROL + 'a').perform()
+                        time.sleep(0.1)
+                        actions.send_keys(Keys.DELETE).perform()
+                        time.sleep(0.2)
+                        
+                        # Escribir el código carácter por carácter
+                        for char in codigo:
+                            actions.send_keys(char).perform()
+                            time.sleep(0.05)  # Pequeño delay entre caracteres
+                    
+                    time.sleep(0.3)
+                    
+                    # Verificar de nuevo
+                    try:
+                        if campo_activo:
+                            valor = campo_activo.get_attribute('value') or ''
+                        else:
+                            campo_activo = self.driver.switch_to.active_element
+                            valor = campo_activo.get_attribute('value') or ''
+                        
+                        if codigo in valor or valor == codigo or valor.strip() == codigo.strip():
+                            print(f"✓✓ Código escrito exitosamente: {codigo}")
+                        else:
+                            print(f"⚠ El código puede no haberse escrito correctamente. Valor: '{valor}' (esperado: '{codigo}')")
+                    except:
+                        print(f"✓✓ Código escrito (no se pudo verificar)")
+                except Exception as e:
+                    print(f"⚠ Error al escribir código directamente: {e}")
+                    
+        except Exception as e:
+            print(f"⚠ Error al pegar código: {e}")
+            import traceback
+            traceback.print_exc()
                 
         except Exception as e:
             print(f"⚠ Error al pegar código: {e}")
@@ -1162,25 +1244,38 @@ class BotRegistroMicrosoft:
             
             actions = ActionChains(self.driver)
             
-            # Campo 1: Mes - Tab 1 vez, Enter 2 veces
-            print("  Completando campo Mes (Tab + Enter 2 veces)...")
+            # Campo 1: Mes - Seleccionar mes aleatorio
+            print(f"  Completando campo Mes (seleccionando mes {mes})...")
             actions.send_keys(Keys.TAB).perform()
             time.sleep(0.3)
             actions.send_keys(Keys.ENTER).perform()
             time.sleep(0.3)
+            # Navegar hasta el mes aleatorio usando flechas hacia abajo
+            # Los meses van de 1 a 12, pero el dropdown puede empezar en 0 o 1
+            # Usamos flechas para navegar al mes correcto
+            for _ in range(mes - 1):  # Navegar hasta el mes (restamos 1 porque ya estamos en el primer elemento)
+                actions.send_keys(Keys.ARROW_DOWN).perform()
+                time.sleep(0.05)
+            time.sleep(0.2)
             actions.send_keys(Keys.ENTER).perform()
             time.sleep(0.5)
-            print(f"  ✓ Mes completado")
+            print(f"  ✓ Mes {mes} seleccionado")
             
-            # Campo 2: Día - Tab 1 vez, Enter 2 veces
-            print("  Completando campo Día (Tab + Enter 2 veces)...")
+            # Campo 2: Día - Seleccionar día aleatorio
+            print(f"  Completando campo Día (seleccionando día {dia})...")
             actions.send_keys(Keys.TAB).perform()
             time.sleep(0.3)
             actions.send_keys(Keys.ENTER).perform()
             time.sleep(0.3)
+            # Navegar hasta el día aleatorio usando flechas hacia abajo
+            # Los días van de 1 a 31 (o menos según el mes)
+            for _ in range(dia - 1):  # Navegar hasta el día (restamos 1 porque ya estamos en el primer elemento)
+                actions.send_keys(Keys.ARROW_DOWN).perform()
+                time.sleep(0.05)
+            time.sleep(0.2)
             actions.send_keys(Keys.ENTER).perform()
             time.sleep(0.5)
-            print(f"  ✓ Día completado")
+            print(f"  ✓ Día {dia} seleccionado")
             
             # Campo 3: Año - Escribir directamente un año coherente
             print(f"  Completando campo Año (escribiendo directamente: {año_nacimiento})...")
@@ -1334,43 +1429,29 @@ class BotRegistroMicrosoft:
     
     def _reiniciar_navegador(self) -> None:
         """
-        Cierra la pestaña/ventana actual y abre una nueva
+        Navega a una nueva pestaña sin cerrar el navegador
         """
         try:
             if self.driver:
-                print("🔄 Cerrando pestaña actual...")
-                # Cerrar todas las pestañas excepto la primera
+                print("🔄 Abriendo nueva pestaña...")
+                # Abrir una nueva pestaña en lugar de cerrar
+                self.driver.execute_script("window.open('');")
+                # Cambiar a la nueva pestaña
                 if len(self.driver.window_handles) > 1:
-                    # Cerrar pestañas adicionales
-                    for handle in self.driver.window_handles[1:]:
-                        self.driver.switch_to.window(handle)
-                        self.driver.close()
-                    # Volver a la primera pestaña
-                    self.driver.switch_to.window(self.driver.window_handles[0])
-                
-                # Cerrar la pestaña actual y abrir una nueva
-                self.driver.close()
-                time.sleep(1)
-                
-                # Si no quedan ventanas, crear una nueva
-                if len(self.driver.window_handles) == 0:
-                    self.driver.execute_script("window.open('');")
-                    self.driver.switch_to.window(self.driver.window_handles[0])
+                    self.driver.switch_to.window(self.driver.window_handles[-1])
                 else:
-                    # Cambiar a la primera pestaña disponible
                     self.driver.switch_to.window(self.driver.window_handles[0])
                 
                 print("✅ Nueva pestaña abierta")
                 time.sleep(2)
         except Exception as e:
             print(f"⚠ Error al reiniciar navegador: {e}")
-            # Si falla, cerrar todo y abrir nuevo navegador
+            # Si falla, solo navegar a la URL de nuevo sin cerrar
             try:
                 if self.driver:
-                    self.driver.quit()
-                self.driver = None
-                print("🔄 Abriendo nuevo navegador...")
-                self.inicializar_navegador()
+                    print("🔄 Navegando a la página de registro...")
+                    self.driver.get(self.url_registro)
+                    time.sleep(3)
             except:
                 pass
     
@@ -1611,14 +1692,26 @@ class BotRegistroMicrosoft:
                     time.sleep(1)
             except KeyboardInterrupt:
                 print("\n⏹ Cerrando bot...")
-                if self.driver:
-                    self.driver.quit()
+                self._cerrar_navegador_seguro()
                 print("✓ Bot cerrado correctamente")
                 
         except Exception as e:
             print(f"\n❌ Error: {e}")
-            if self.driver:
-                self.driver.quit()
+            import traceback
+            traceback.print_exc()
+            # NO cerrar el navegador automáticamente en caso de error
+            # Solo mostrar el error y mantener el navegador abierto
+            print("\n⚠ El navegador permanecerá abierto a pesar del error.")
+            print("Presiona Ctrl+C para cerrar manualmente.\n")
+            
+            # Mantener el programa en ejecución incluso después del error
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                print("\n⏹ Cerrando bot...")
+                self._cerrar_navegador_seguro()
+                print("✓ Bot cerrado correctamente")
 
 
 def abrir_registro_microsoft(usar_reconocimiento: bool = True, posicion_x: int = 0, posicion_y: int = 0) -> None:
